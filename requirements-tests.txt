@@ -1,0 +1,10 @@
+factory_boy==2.11.1
+flake8-awesome==1.2.0
+pytest==5.0.1
+pytest-cov==2.7.1
+pytest-deadfixtures==2.1.0
+pytest-env==0.6.2
+pytest-lazy-fixture==0.6.1
+pytest_mock==1.10.0
+requests_mock==1.7.0
+unify==0.5
