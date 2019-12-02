@@ -8,11 +8,11 @@ from .config import config
 database = PooledPostgresqlExtDatabase(
     **{
         'max_connections': 10,
-        'database': config.db_name,
-        'user': config.db_user,
-        'password': config.db_password,
-        'host': config.db_host,
-        'port': config.db_port,
+        'database': config.DB_NAME,
+        'user': config.DB_USER,
+        'password': config.DB_PASSWORD,
+        'host': config.DB_HOST,
+        'port': config.DB_PORT,
         'autorollback': True,
     }
 )

@@ -114,7 +114,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @app.post('/api/v1/enqueue')
 def add_me_to_meeting_queue(current_user: models.User = Depends(get_current_user)):
-    models.WaitMeetingQueue.create(user=current_user)
+    models.WaitMeetingQueue.insert(user=current_user).on_conflict_ignore()
+    return None
+
+
+@app.post('/api/v1/unenqueue')
+def remove_me_from_meeting_queue(current_user: models.User = Depends(get_current_user)):
+    models.WaitMeetingQueue.filter(user=current_user).delete()
+    return None
 
 
 @app.get('/')
