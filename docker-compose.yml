@@ -1,0 +1,12 @@
+version: '3.3'
+
+services:
+  db:
+      image: registry.tech.bank24.int/hr-it/postgres:dev
+      ports:
+          - "5432:5432"
+      environment:
+          APP_DB_NAME: 'rc'
+          APP_DB_USER: 'rc'
+          APP_DB_PASSWORD: 'rc'
+          APP_DB_INIT_SQL: 'ALTER USER "rc" WITH CREATEDB'

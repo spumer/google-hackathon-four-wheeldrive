@@ -1,3 +1,6 @@
+# app
+GOOGLE_APPLICATION_CREDENTIALS
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
