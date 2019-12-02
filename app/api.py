@@ -7,16 +7,27 @@ from fastapi import Query
 from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
 from pydantic import BaseModel
+from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED
 
+from app import models
 from app.tochka_auth import authenticate_user
 from app.tochka_auth import get_authorize_url
 
 app = FastAPI()
 firebase_app = firebase_admin.initialize_app()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/token')
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/oauth')
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 
 
 class Token(BaseModel):
@@ -52,16 +63,9 @@ class OAuth2RedirectQuery:
         self.redirect_uri = redirect_uri
 
 
-@app.get('/auth/oauth', response_model=Token, tags=['auth'])
+@app.post('/auth/obtain-token', response_model=Token, tags=['auth'])
 async def redirect_for_jwt_token(data: OAuth2RedirectQuery = Depends()):
     user, data = await authenticate_user(data.code, data.redirect_uri)
-    if not user:
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
-            detail='Incorrect username or password',
-            headers={'WWW-Authenticate': 'Bearer'},
-        )
-
     token = auth.create_custom_token(user.username)
     return Token(token=token)
 
@@ -69,6 +73,15 @@ async def redirect_for_jwt_token(data: OAuth2RedirectQuery = Depends()):
 @app.get('/auth/redirect', tags=['auth'], name='auth_redirect')
 async def redirect_to_auth():
     return RedirectResponse(get_authorize_url())
+
+
+def get_user(token_data: TokenData) -> models.User:
+    try:
+        user = models.User.get_exact(username=token_data.username)
+    except models.User.DoesNotExist:
+        user = models.User.create(**token_data.dict())
+
+    return user
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -80,24 +93,30 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
     try:
         payload = auth.verify_id_token(token)
-        user_data: dict = payload.get('user_data')
-        if user_data is None:
-            raise credentials_exception
-        token_data = TokenData(**user_data)
     except (
         ValueError, auth.InvalidIdTokenError, auth.ExpiredIdTokenError,
         auth.RevokedIdTokenError, auth.CertificateFetchError,
     ):
         raise credentials_exception
 
-    '''
-    user = get_user(fake_users_db, username=token_data.username)
+    user_data: dict = payload.get('user_data')
+    if user_data is None:
+        raise credentials_exception
+
+    token_data = TokenData(**user_data)
+    user = get_user(token_data)
+
     if user is None:
         raise credentials_exception
-    '''
-    return token_data
+
+    return user
+
+
+@app.post('/api/v1/enqueue')
+def add_me_to_meeting_queue(current_user: models.User = Depends(get_current_user)):
+    models.WaitMeetingQueue.create(user=current_user)
 
 
 @app.get('/')
 async def read_root():
-    return RedirectResponse(app.url_path_for('auth_redirect'))
+    return RedirectResponse(app.url_path_for('docs'))
