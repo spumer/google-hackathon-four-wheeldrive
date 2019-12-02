@@ -2,8 +2,8 @@ import firebase_admin
 import pydantic
 from fastapi import Depends
 from fastapi import FastAPI
+from fastapi import Form
 from fastapi import HTTPException
-from fastapi import Query
 from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
 from pydantic import BaseModel
@@ -43,7 +43,7 @@ class TokenData(BaseModel):
     patronymic: str = None
 
 
-class OAuth2RedirectQuery:
+class OAuth2RedirectForm:
     """This is a dependency class, use it like:
 
         @app.post("/token")
@@ -56,15 +56,15 @@ class OAuth2RedirectQuery:
 
     def __init__(
         self,
-        code: str = Query(...),
-        redirect_uri: pydantic.AnyUrl = Query(''),
+        code: str = Form(...),
+        redirect_uri: pydantic.AnyUrl = Form(''),
     ):
         self.code = code
         self.redirect_uri = redirect_uri
 
 
 @app.post('/auth/obtain-token', response_model=Token, tags=['auth'])
-async def redirect_for_jwt_token(data: OAuth2RedirectQuery = Depends()):
+async def redirect_for_jwt_token(data: OAuth2RedirectForm = Depends()):
     user, data = await authenticate_user(data.code, data.redirect_uri)
     token = auth.create_custom_token(user.username)
     return Token(token=token)
