@@ -1,8 +1,8 @@
 import firebase_admin
 import pydantic
+from fastapi import Body
 from fastapi import Depends
 from fastapi import FastAPI
-from fastapi import Form
 from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
@@ -56,8 +56,8 @@ class OAuth2RedirectForm:
 
     def __init__(
         self,
-        code: str = Form(...),
-        redirect_uri: pydantic.AnyUrl = Form(''),
+        code: str = Body(...),
+        redirect_uri: pydantic.AnyUrl = Body(''),
     ):
         self.code = code
         self.redirect_uri = redirect_uri
